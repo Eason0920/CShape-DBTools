@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace common.tools {
+namespace Common.tools {
     /// <summary>
     /// 存取資料庫工具類別
     /// </summary>
