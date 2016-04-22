@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace tw.net.ebc {
+namespace common.tools {
     /// <summary>
     /// 存取資料庫工具類別
     /// </summary>
