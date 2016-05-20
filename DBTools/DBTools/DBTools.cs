@@ -20,6 +20,15 @@ namespace Common.tools {
         /// 要求資料庫資料(DataTable)
         /// </summary>
         /// <param name="commandText">command文字</param>
+        /// <returns>DataTable</returns>
+        public DataTable requestDBToDataTable(string commandText) {
+            return requestDBToDataTable(commandText, null);
+        }
+
+        /// <summary>
+        /// 要求資料庫資料(DataTable)
+        /// </summary>
+        /// <param name="commandText">command文字</param>
         /// <param name="dicy">command參數</param>
         /// <returns>DataTable</returns>
         public DataTable requestDBToDataTable(string commandText, Dictionary<string, string> dicy) {
@@ -28,7 +37,7 @@ namespace Common.tools {
             DataTable dataTable = new DataTable();
             SqlConnection sqlConnection = new SqlConnection(connString);
             SqlCommand sqlCommand = new SqlCommand(commandText, sqlConnection);
-            foreach (string key in dicy.Keys) { sqlCommand.Parameters.AddWithValue(key, dicy[key]); }
+            if (dicy != null) { foreach (string key in dicy.Keys) { sqlCommand.Parameters.AddWithValue(key, dicy[key]); } }
             SqlDataAdapter adapter = new SqlDataAdapter(sqlCommand);
 
             try {
@@ -53,6 +62,15 @@ namespace Common.tools {
         /// 要求資料庫資料(DataSet)
         /// </summary>
         /// <param name="commandText">command文字</param>
+        /// <returns>DataSet</returns>
+        public DataSet requestDBToDataSet(string commandText) {
+            return requestDBToDataSet(commandText, null);
+        }
+
+        /// <summary>
+        /// 要求資料庫資料(DataSet)
+        /// </summary>
+        /// <param name="commandText">command文字</param>
         /// <param name="dicy">command參數</param>
         /// <returns>DataSet</returns>
         public DataSet requestDBToDataSet(string commandText, Dictionary<string, string> dicy) {
@@ -61,7 +79,7 @@ namespace Common.tools {
             DataSet dataSet = new DataSet();
             SqlConnection sqlConnection = new SqlConnection(connString);
             SqlCommand sqlCommand = new SqlCommand(commandText, sqlConnection);
-            foreach (string key in dicy.Keys) { sqlCommand.Parameters.AddWithValue(key, dicy[key]); }
+            if (dicy != null) { foreach (string key in dicy.Keys) { sqlCommand.Parameters.AddWithValue(key, dicy[key]); } }
             SqlDataAdapter adapter = new SqlDataAdapter(sqlCommand);
 
             try {
@@ -181,6 +199,15 @@ namespace Common.tools {
         /// 異動資料庫資料
         /// </summary>
         /// <param name="commandText">command文字</param>
+        /// <returns>int</returns>
+        public int modifyDBData(string commandText) {
+            return modifyDBData(commandText, null);
+        }
+
+        /// <summary>
+        /// 異動資料庫資料
+        /// </summary>
+        /// <param name="commandText">command文字</param>
         /// <param name="dicy">command參數</param>
         /// <returns>int</returns>
         public int modifyDBData(string commandText, Dictionary<string, object> dicy) {
@@ -200,7 +227,7 @@ namespace Common.tools {
             SqlConnection sqlConnection = new SqlConnection(connString);
             SqlCommand sqlCommand = new SqlCommand(commandText, sqlConnection);
             SqlTransaction transaction = null;
-            foreach (string key in dicy.Keys) { sqlCommand.Parameters.AddWithValue(key, dicy[key]); }
+            if (dicy != null) { foreach (string key in dicy.Keys) { sqlCommand.Parameters.AddWithValue(key, dicy[key]); } }
             int result = -1;
 
             try {
@@ -229,7 +256,16 @@ namespace Common.tools {
         /// </summary>
         /// <param name="spName">預存程序</param>
         /// <param name="sqlParams">預存程序參數陣列</param>
-        public void useStoredProdure(string spName, SqlParameter[] sqlParams = null) {
+        public void useStoredProdure(string spName) {
+            useStoredProdure(spName, null);
+        }
+
+        /// <summary>
+        /// 存取資料庫預存程序
+        /// </summary>
+        /// <param name="spName">預存程序</param>
+        /// <param name="sqlParams">預存程序參數陣列</param>
+        public void useStoredProdure(string spName, SqlParameter[] sqlParams) {
             this.reqError = false;
             this.reqErrorText = null;
             using (SqlConnection sqlConn = new SqlConnection(connString)) {
@@ -255,7 +291,17 @@ namespace Common.tools {
         /// <param name="spName">預存程序</param>
         /// <param name="sqlParams">預存程序參數陣列</param>
         /// <returns>DataSet</returns>
-        public DataSet storedProdureToDataSet(string spName, SqlParameter[] sqlParams = null) {
+        public DataSet storedProdureToDataSet(string spName) {
+            return storedProdureToDataSet(spName, null);
+        }
+
+        /// <summary>
+        /// 存取資料庫預存程序(回傳DataSet)
+        /// </summary>
+        /// <param name="spName">預存程序</param>
+        /// <param name="sqlParams">預存程序參數陣列</param>
+        /// <returns>DataSet</returns>
+        public DataSet storedProdureToDataSet(string spName, SqlParameter[] sqlParams) {
             this.reqError = false;
             this.reqErrorText = null;
             DataSet responseDS = new DataSet();
