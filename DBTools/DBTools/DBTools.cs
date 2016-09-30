@@ -46,6 +46,7 @@ namespace Common.tools {
             } catch (Exception ex) {
                 this.reqError = true;
                 this.reqErrorText = ex.Message;
+                throw ex;
             } finally {
                 if (sqlCommand != null) { sqlCommand.Dispose(); }
                 if (adapter != null) { adapter.Dispose(); }
@@ -88,6 +89,7 @@ namespace Common.tools {
             } catch (Exception ex) {
                 this.reqError = true;
                 this.reqErrorText = ex.Message;
+                throw ex;
             } finally {
                 if (sqlCommand != null) { sqlCommand.Dispose(); }
                 if (adapter != null) { adapter.Dispose(); }
@@ -148,6 +150,8 @@ namespace Common.tools {
                     sqlConnection.Close();
                     sqlConnection.Dispose();
                 }
+
+                throw ex;
             }
 
             return resultReader;
@@ -188,6 +192,7 @@ namespace Common.tools {
                     } catch (Exception ex) {
                         this.reqError = true;
                         this.reqErrorText = ex.Message;
+                        throw ex;
                     }
                 }
             }
@@ -240,6 +245,7 @@ namespace Common.tools {
                 transaction.Rollback();
                 this.reqError = true;
                 this.reqErrorText = ex.Message;
+                throw ex;
             } finally {
                 if (sqlCommand != null) { sqlCommand.Dispose(); }
                 if (sqlConnection != null) {
@@ -280,6 +286,7 @@ namespace Common.tools {
                     } catch (Exception ex) {
                         this.reqError = true;
                         this.reqErrorText = ex.Message;
+                        throw ex;
                     }
                 }
             }
@@ -320,6 +327,7 @@ namespace Common.tools {
                     } catch (Exception ex) {
                         this.reqError = true;
                         this.reqErrorText = ex.Message;
+                        throw ex;
                     }
                 }
             }
