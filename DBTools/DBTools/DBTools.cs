@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Dapper;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace Common.tools {
     /// <summary>
@@ -15,6 +17,8 @@ namespace Common.tools {
         public DBTools(string connString) {
             this.connString = connString;
         }
+
+        #region *** ADO.NET Common ***
 
         /// <summary>
         /// 要求資料庫資料(DataTable)
@@ -262,8 +266,8 @@ namespace Common.tools {
         /// </summary>
         /// <param name="spName">預存程序</param>
         /// <param name="sqlParams">預存程序參數陣列</param>
-        public void useStoredProdure(string spName) {
-            useStoredProdure(spName, null);
+        public void useStoredProcedure(string spName) {
+            useStoredProcedure(spName, null);
         }
 
         /// <summary>
@@ -271,7 +275,7 @@ namespace Common.tools {
         /// </summary>
         /// <param name="spName">預存程序</param>
         /// <param name="sqlParams">預存程序參數陣列</param>
-        public void useStoredProdure(string spName, SqlParameter[] sqlParams) {
+        public void useStoredProcedure(string spName, SqlParameter[] sqlParams) {
             this.reqError = false;
             this.reqErrorText = null;
             using (SqlConnection sqlConn = new SqlConnection(connString)) {
@@ -298,8 +302,8 @@ namespace Common.tools {
         /// <param name="spName">預存程序</param>
         /// <param name="sqlParams">預存程序參數陣列</param>
         /// <returns>DataSet</returns>
-        public DataSet storedProdureToDataSet(string spName) {
-            return storedProdureToDataSet(spName, null);
+        public DataSet storedProcedureToDataSet(string spName) {
+            return storedProcedureToDataSet(spName, null);
         }
 
         /// <summary>
@@ -308,7 +312,7 @@ namespace Common.tools {
         /// <param name="spName">預存程序</param>
         /// <param name="sqlParams">預存程序參數陣列</param>
         /// <returns>DataSet</returns>
-        public DataSet storedProdureToDataSet(string spName, SqlParameter[] sqlParams) {
+        public DataSet storedProcedureToDataSet(string spName, SqlParameter[] sqlParams) {
             this.reqError = false;
             this.reqErrorText = null;
             DataSet responseDS = new DataSet();
@@ -334,6 +338,236 @@ namespace Common.tools {
 
             return responseDS;
         }
+
+        #endregion
+
+        #region *** ADO.NET With Dapper ***
+
+        /// <summary>
+        /// 使用參數查詢資料庫資料，並轉為實體動態型別模型 List 集合
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<dynamic></returns>
+        public List<dynamic> queryModelList(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            return queryModelList<dynamic>(strCommand, objParams, isoLevel);
+        }
+
+        /// <summary>
+        /// 使用參數查詢資料庫資料，並轉為指定的實體類別模型 List 集合
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<T></returns>
+        public List<T> queryModelList<T>(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            List<T> listModel;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        listModel = sqlConn.Query<T>(strCommand, objParams, trans).ToList();
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return listModel;
+        }
+
+        /// <summary>
+        /// 要求資料庫第一筆資料，並轉為實體動態型別模型
+        /// 呼叫函式時可指定回傳的實體類別模型型別，若不指定需傳入 dynamic 動態型別
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>dynamic</returns>
+        public dynamic querySingleModel(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            return querySingleModel<dynamic>(strCommand, objParams, isoLevel);
+        }
+
+        /// <summary>
+        /// 使用參數查詢資料庫資料，並轉為指定的實體類別模型
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>T</returns>
+        public T querySingleModel<T>(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            T model;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        model = sqlConn.Query<T>(strCommand, objParams, trans).FirstOrDefault();
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return model;
+        }
+
+        /// <summary>
+        /// 使用參數查詢多個資料庫表格資料，並轉為指定的實體型別模型 List 集合
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <param name="aryModelType">指定實體型別模型陣列</param>
+        /// <returns>List<List<dynamic>></returns>
+        public List<List<dynamic>> queryMultiTypeModel(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted, params Type[] aryModelType) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            List<List<dynamic>> listQueryModelList = new List<List<dynamic>>();
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        using (var multiple = sqlConn.QueryMultiple(strCommand, objParams, trans)) {
+                            if (aryModelType != null && aryModelType.Length > 0) {
+                                aryModelType.ToList().ForEach(type => listQueryModelList.Add(multiple.Read(type).ToList()));
+                            } else {
+                                while (!multiple.IsConsumed) {
+                                    listQueryModelList.Add(multiple.Read().ToList());
+                                }
+                            }
+
+                            trans.Commit();
+                        }
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return listQueryModelList;
+        }
+
+        /// <summary>
+        /// 使用自訂物件模型進行資料庫單筆或多筆資料異動
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">異動資料物件模型</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>int</returns>
+        public int modifyDBDataWithModel(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            int result = -1;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        result = sqlConn.Execute(strCommand, objParams, trans);
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 查詢預存程序，並回傳動態型別模型 List 集合與輸出參數值
+        /// </summary>
+        /// <param name="spName">預存程序名稱</param>
+        /// <param name="spParams">預存程序輸入輸出參數</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<dynamic></returns>
+        public List<dynamic> queryStoredProcedure(string spName, DynamicParameters spParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            return queryStoredProcedure<dynamic>(spName, spParams, isoLevel);
+        }
+
+        /// <summary>
+        /// 查詢預存程序，並回傳指定的實體型別模型 List 集合與輸出參數值
+        /// </summary>
+        /// <param name="spName">預存程序名稱</param>
+        /// <param name="spParams">預存程序輸入參數</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<T></returns>
+        public List<T> queryStoredProcedure<T>(string spName, DynamicParameters spParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            List<T> listQuerySpResult;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        listQuerySpResult = sqlConn.Query<T>(spName, spParams, trans, commandType: CommandType.StoredProcedure).ToList();
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return listQuerySpResult;
+        }
+
+        /// <summary>
+        /// 建立預存程序輸入輸出參數物件
+        /// </summary>
+        /// <returns></returns>
+        public DynamicParameters createDbParams() {
+            return new DynamicParameters();
+        }
+
+        #endregion
+
     }
 }
 
