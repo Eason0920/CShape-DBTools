@@ -343,8 +343,6 @@ namespace Common.tools {
 
         #region *** ADO.NET With Dapper ***
 
-        #region *** 查詢單一表格資料模型清單 ***
-
         /// <summary>
         /// 使用參數查詢資料庫資料，並轉為實體動態型別模型 List 集合
         /// </summary>
@@ -390,10 +388,6 @@ namespace Common.tools {
 
             return listModel;
         }
-
-        #endregion
-
-        #region *** 查詢單一表格資料模型清單，並回傳第一筆資料 ***
 
         /// <summary>
         /// 要求資料庫第一筆資料，並轉為實體動態型別模型
@@ -442,10 +436,6 @@ namespace Common.tools {
             return model;
         }
 
-        #endregion
-
-        #region *** 查詢多個資料庫表格資料模型清單 ***
-
         /// <summary>
         /// 使用參數查詢多個資料庫表格資料，並轉為指定的實體型別模型 List 集合
         /// </summary>
@@ -489,10 +479,6 @@ namespace Common.tools {
             return listQueryModelList;
         }
 
-        #endregion
-
-        #region *** 利用資料模型進行資料庫異動 ***
-
         /// <summary>
         /// 使用自訂物件模型進行資料庫單筆或多筆資料異動
         /// </summary>
@@ -525,10 +511,6 @@ namespace Common.tools {
 
             return result;
         }
-
-        #endregion
-
-        #region *** 資料庫預存程序查詢 ***
 
         /// <summary>
         /// 查詢預存程序，並回傳動態型別模型 List 集合與輸出參數值
@@ -583,8 +565,6 @@ namespace Common.tools {
         public DynamicParameters createDbParams() {
             return new DynamicParameters();
         }
-
-        #endregion
 
         #endregion
 
