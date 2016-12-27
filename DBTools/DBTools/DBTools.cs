@@ -9,7 +9,7 @@ namespace Common.tools {
     /// <summary>
     /// 存取資料庫工具類別
     /// </summary>
-    public class DBTools {  //
+    public class DBTools {
         private string connString = null;
         public bool reqError = false;
         public string reqErrorText = null;
