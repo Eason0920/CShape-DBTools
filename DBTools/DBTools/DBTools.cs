@@ -509,7 +509,7 @@ namespace Common.tools {
 
             using (SqlConnection sqlConn = new SqlConnection(connString)) {
                 sqlConn.Open();
-
+                
                 using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
                     try {
                         result = sqlConn.Execute(strCommand, objParams, trans);
