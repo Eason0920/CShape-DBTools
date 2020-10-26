@@ -356,7 +356,7 @@ namespace Common.tools {
         public List<dynamic> queryModelList(string strCommand, object objParams = null,
             IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
 
-            return queryModelListAsync<dynamic>(strCommand, objParams, isoLevel);
+            return queryModelList<dynamic>(strCommand, objParams, isoLevel);
         }
 
         /// <summary>
