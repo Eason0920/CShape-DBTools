@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Common.tools {
     /// <summary>
@@ -359,6 +360,19 @@ namespace Common.tools {
         }
 
         /// <summary>
+        /// 非同步使用參數查詢資料庫資料，並轉為實體動態型別模型 List 集合
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<dynamic></returns>
+        public async Task<List<dynamic>> queryModelListAsync(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            return await queryModelListAsync<dynamic>(strCommand, objParams, isoLevel);
+        }
+
+        /// <summary>
         /// 使用參數查詢資料庫資料，並轉為指定的實體類別模型 List 集合
         /// </summary>
         /// <param name="strCommand">T-SQL command</param>
@@ -391,6 +405,40 @@ namespace Common.tools {
             return listModel;
         }
 
+        /// <summary>
+        /// 非同步使用參數查詢資料庫資料，並轉為指定的實體類別模型 List 集合
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<T></returns>
+        public async Task<List<T>> queryModelListAsync<T>(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            List<T> listModel;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        var result = await sqlConn.QueryAsync<T>(strCommand, objParams, trans);
+                        listModel = result.ToList();
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return listModel;
+        }
+
         #endregion
 
         #region *** 查詢單一表格資料模型清單，並回傳第一筆資料 ***
@@ -407,6 +455,20 @@ namespace Common.tools {
             IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
 
             return querySingleModel<dynamic>(strCommand, objParams, isoLevel);
+        }
+
+        /// <summary>
+        /// 要求資料庫第一筆資料，並轉為實體動態型別模型
+        /// 呼叫函式時可指定回傳的實體類別模型型別，若不指定需傳入 dynamic 動態型別
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>dynamic</returns>
+        public async Task<dynamic> querySingleModelAsync(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            return await querySingleModelAsync<dynamic>(strCommand, objParams, isoLevel);
         }
 
         /// <summary>
@@ -429,6 +491,40 @@ namespace Common.tools {
                 using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
                     try {
                         model = sqlConn.Query<T>(strCommand, objParams, trans).FirstOrDefault();
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return model;
+        }
+
+        /// <summary>
+        /// 非同步使用參數查詢資料庫資料，並轉為指定的實體類別模型
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>T</returns>
+        public async Task<T> querySingleModelAsync<T>(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            T model;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        var result = await sqlConn.QueryAsync<T>(strCommand, objParams, trans);
+                        model = result.FirstOrDefault();
                         trans.Commit();
                     } catch (Exception ex) {
                         trans.Rollback();
@@ -489,6 +585,49 @@ namespace Common.tools {
             return listQueryModelList;
         }
 
+        /// <summary>
+        /// 非同步使用參數查詢多個資料庫表格資料，並轉為指定的實體型別模型 List 集合
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">查詢參數物件</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <param name="aryModelType">指定實體型別模型陣列</param>
+        /// <returns>List<List<dynamic>></returns>
+        public async Task<List<List<dynamic>>> queryMultiTypeModelAsync(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted, params Type[] aryModelType) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            List<List<dynamic>> listQueryModelList = new List<List<dynamic>>();
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        using (var multiple = await sqlConn.QueryMultipleAsync(strCommand, objParams, trans)) {
+                            if (aryModelType != null && aryModelType.Length > 0) {
+                                aryModelType.ToList().ForEach(type => listQueryModelList.Add(multiple.Read(type).ToList()));
+                            } else {
+                                while (!multiple.IsConsumed) {
+                                    listQueryModelList.Add(multiple.Read().ToList());
+                                }
+                            }
+
+                            trans.Commit();
+                        }
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return listQueryModelList;
+        }
+
         #endregion
 
         #region *** 利用資料模型進行資料庫異動 ***
@@ -509,10 +648,43 @@ namespace Common.tools {
 
             using (SqlConnection sqlConn = new SqlConnection(connString)) {
                 sqlConn.Open();
-                
+
                 using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
                     try {
                         result = sqlConn.Execute(strCommand, objParams, trans);
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 非同步使用自訂物件模型進行資料庫單筆或多筆資料異動
+        /// </summary>
+        /// <param name="strCommand">T-SQL command</param>
+        /// <param name="objParams">異動資料物件模型</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>int</returns>
+        public async Task<int> modifyDBDataWithModelAsync(string strCommand, object objParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            int result = -1;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        result = await sqlConn.ExecuteAsync(strCommand, objParams, trans);
                         trans.Commit();
                     } catch (Exception ex) {
                         trans.Rollback();
@@ -544,6 +716,19 @@ namespace Common.tools {
         }
 
         /// <summary>
+        /// 非同步查詢預存程序，並回傳動態型別模型 List 集合與輸出參數值
+        /// </summary>
+        /// <param name="spName">預存程序名稱</param>
+        /// <param name="spParams">預存程序輸入輸出參數</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<dynamic></returns>
+        public async Task<List<dynamic>> queryStoredProcedureAsync(string spName, DynamicParameters spParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            return await queryStoredProcedureAsync<dynamic>(spName, spParams, isoLevel);
+        }
+
+        /// <summary>
         /// 查詢預存程序，並回傳指定的實體型別模型 List 集合與輸出參數值
         /// </summary>
         /// <param name="spName">預存程序名稱</param>
@@ -563,6 +748,40 @@ namespace Common.tools {
                 using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
                     try {
                         listQuerySpResult = sqlConn.Query<T>(spName, spParams, trans, commandType: CommandType.StoredProcedure).ToList();
+                        trans.Commit();
+                    } catch (Exception ex) {
+                        trans.Rollback();
+                        this.reqError = true;
+                        this.reqErrorText = ex.Message;
+                        throw ex;
+                    }
+                }
+            }
+
+            return listQuerySpResult;
+        }
+
+        /// <summary>
+        /// 非同步查詢預存程序，並回傳指定的實體型別模型 List 集合與輸出參數值
+        /// </summary>
+        /// <param name="spName">預存程序名稱</param>
+        /// <param name="spParams">預存程序輸入參數</param>
+        /// <param name="isoLevel">交易等級(預設為最寬鬆等級)</param>
+        /// <returns>List<T></returns>
+        public async Task<List<T>> queryStoredProcedureAsync<T>(string spName, DynamicParameters spParams = null,
+            IsolationLevel isoLevel = IsolationLevel.ReadUncommitted) {
+
+            this.reqError = false;
+            this.reqErrorText = null;
+            List<T> listQuerySpResult;
+
+            using (SqlConnection sqlConn = new SqlConnection(connString)) {
+                sqlConn.Open();
+
+                using (SqlTransaction trans = sqlConn.BeginTransaction(isoLevel)) {
+                    try {
+                        var result = await sqlConn.QueryAsync<T>(spName, spParams, trans, commandType: CommandType.StoredProcedure);
+                        listQuerySpResult = result.ToList();
                         trans.Commit();
                     } catch (Exception ex) {
                         trans.Rollback();
